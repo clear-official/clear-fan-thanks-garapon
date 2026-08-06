@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <div class="confetti-layer" aria-hidden="true"></div>
@@ -33,12 +33,6 @@
             <span class="garapon-line"></span>
           </div>
           <div class="garapon-axis"></div>
-          <div class="garapon-handle-anchor">
-            <div class="garapon-handle">
-              <span class="garapon-handle-arm"></span>
-              <span class="garapon-handle-grip"></span>
-            </div>
-          </div>
           <div class="garapon-support garapon-support-left"></div>
           <div class="garapon-support garapon-support-right"></div>
           <div class="garapon-chute"></div>
@@ -49,9 +43,10 @@
       </div>
 
       <div id="statusBox" class="status-box" hidden></div>
+      <p id="actionGuide" class="action-guide">ボタンを押すとガラポンが回り始めます</p>
 
       <button id="drawButton" class="draw-button" type="button" disabled>
-        <span>ガラポンを回す</span>
+        <span id="drawButtonText">ガラポンを回す</span>
       </button>
 
       <p class="period">抽選期間：2026年8月7日 0:00〜8月10日 24:00</p>
@@ -59,19 +54,23 @@
 
     <section id="resultPanel" class="result-panel" hidden>
       <p class="result-label">抽選結果</p>
-      <h2 id="resultRank">参加賞</h2>
-      <p id="resultPoints" class="result-points">500<span>pt獲得</span></p>
+      <h2 class="congratulations">おめでとうございます！✨</h2>
+      <p id="resultRank" class="result-rank">参加賞</p>
+      <p id="resultPoints" class="result-points"><strong>500</strong><span>pt獲得！</span></p>
 
       <div class="code-box">
         <p>キャンペーンコード</p>
         <div class="code-row">
           <strong id="campaignCode">R7MF3K8NP</strong>
-          <button id="copyButton" type="button">コピー</button>
+          <button id="copyButton" class="copy-icon-button" type="button" aria-label="キャンペーンコードをコピー" title="コピー">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V5.8C8 4.8 8.8 4 9.8 4h8.4c1 0 1.8.8 1.8 1.8v8.4c0 1-.8 1.8-1.8 1.8H17v1.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8V8.8C5 7.8 5.8 7 6.8 7H8Zm2 0h5.2c1 0 1.8.8 1.8 1.8V14h1V6h-8v1Zm5 2H7v8h8V9Z"/></svg>
+          </button>
         </div>
       </div>
 
-      <p class="deadline">コード利用期限：2026年8月11日 24:00まで</p>
       <p id="copyMessage" class="copy-message" aria-live="polite"></p>
+      <a class="claim-button" href="https://app-clear.com/open?act=campaign_code">ポイントを受け取る</a>
+      <p class="deadline">コード利用期限：2026年8月11日 24:00まで</p>
     </section>
 
     <p class="notice">キャンペーンコードは、お一人につき1回のみご利用いただけます。</p>
@@ -82,6 +81,6 @@
     <p>確認中です…</p>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

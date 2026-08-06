@@ -2,9 +2,12 @@
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzAFDaOgBfuQP1Rl7OcAF3hHZY0jkzdoMSz3sdOA52-1H2KaA0yWg9BH70z2cDuWtsBQg/exec';
 const DEVICE_KEY = 'clearFanThanksFestivalDeviceId202608';
+const STOP_ENABLE_DELAY_MS = 1200;
 
 const elements = {
   drawButton: document.getElementById('drawButton'),
+  drawButtonText: document.getElementById('drawButtonText'),
+  actionGuide: document.getElementById('actionGuide'),
   garapon: document.getElementById('garapon'),
   statusBox: document.getElementById('statusBox'),
   resultPanel: document.getElementById('resultPanel'),
@@ -17,11 +20,12 @@ const elements = {
   confettiLayer: document.querySelector('.confetti-layer')
 };
 
-let isDrawing = false;
+let lotteryState = 'idle';
+let pendingDrawPromise = null;
 const deviceId = getOrCreateDeviceId();
 
 window.addEventListener('DOMContentLoaded', initialize);
-elements.drawButton.addEventListener('click', handleDraw);
+elements.drawButton.addEventListener('click', handleLotteryButton);
 elements.copyButton.addEventListener('click', copyCampaignCode);
 
 async function initialize() {
@@ -49,7 +53,7 @@ function handleStatusResponse(response) {
 
   if (response.status === 'AVAILABLE') {
     hideStatus();
-    elements.drawButton.disabled = false;
+    setIdleState();
     return;
   }
 
@@ -57,36 +61,64 @@ function handleStatusResponse(response) {
   showStatus(response.message || '現在は抽選できません。');
 }
 
-async function handleDraw() {
-  if (isDrawing) return;
+function handleLotteryButton() {
+  if (lotteryState === 'idle') {
+    startSpinning();
+    return;
+  }
+  if (lotteryState === 'readyToStop') {
+    stopAndReveal();
+  }
+}
 
-  isDrawing = true;
+function startSpinning() {
+  lotteryState = 'spinningLocked';
   elements.drawButton.disabled = true;
+  elements.drawButton.classList.add('is-stop');
+  elements.drawButtonText.textContent = 'まもなくストップできます';
+  elements.actionGuide.textContent = 'ガラポンが回っています…';
   hideStatus();
   elements.garapon.classList.remove('releasing');
   elements.garapon.classList.add('spinning');
 
+  pendingDrawPromise = jsonpRequest({ action: 'draw', deviceId });
+
+  window.setTimeout(() => {
+    if (lotteryState !== 'spinningLocked') return;
+    lotteryState = 'readyToStop';
+    elements.drawButton.disabled = false;
+    elements.drawButtonText.textContent = 'ストップ！';
+    elements.actionGuide.textContent = '今、ストップできます。下のボタンを押してください';
+    elements.drawButton.classList.add('is-ready');
+  }, STOP_ENABLE_DELAY_MS);
+}
+
+async function stopAndReveal() {
+  if (lotteryState !== 'readyToStop') return;
+
+  lotteryState = 'stopping';
+  elements.drawButton.disabled = true;
+  elements.drawButtonText.textContent = '結果を確認中…';
+  elements.actionGuide.textContent = '玉が出てくるまで少しお待ちください';
+  elements.drawButton.classList.remove('is-ready');
+
   let response;
   try {
-    response = await jsonpRequest({ action: 'draw', deviceId });
+    response = await pendingDrawPromise;
   } catch (error) {
     elements.garapon.classList.remove('spinning');
     showStatus('通信に失敗しました。画面を閉じずに、時間を空けて再度お試しください。');
-    elements.drawButton.disabled = false;
-    isDrawing = false;
+    setIdleState();
     return;
   }
 
-  const elapsedMinimum = new Promise(resolve => setTimeout(resolve, 2000));
-  await elapsedMinimum;
   elements.garapon.classList.remove('spinning');
 
   if (!response || response.ok !== true || !response.result) {
     showStatus(response?.message || '抽選結果を取得できませんでした。');
     if (response?.status !== 'EVENT_ENDED' && response?.status !== 'LIMIT_REACHED') {
-      elements.drawButton.disabled = false;
+      setIdleState();
     }
-    isDrawing = false;
     return;
   }
 
@@ -94,7 +126,16 @@ async function handleDraw() {
   elements.garapon.classList.add('releasing');
   await new Promise(resolve => setTimeout(resolve, 1250));
   showResult(response.result, true);
-  isDrawing = false;
+  lotteryState = 'completed';
+}
+
+function setIdleState() {
+  lotteryState = 'idle';
+  pendingDrawPromise = null;
+  elements.drawButton.disabled = false;
+  elements.drawButton.classList.remove('is-stop', 'is-ready');
+  elements.drawButtonText.textContent = 'ガラポンを回す';
+  elements.actionGuide.textContent = 'ボタンを押すとガラポンが回り始めます';
 }
 
 function setBallColor(rank) {
@@ -111,8 +152,9 @@ function setBallColor(rank) {
 function showResult(result, celebrate) {
   elements.drawButton.disabled = true;
   elements.statusBox.hidden = true;
+  elements.actionGuide.hidden = true;
   elements.resultRank.textContent = result.rank || '参加賞';
-  elements.resultPoints.innerHTML = `${Number(result.points || 0).toLocaleString('ja-JP')}<span>pt獲得</span>`;
+  elements.resultPoints.innerHTML = `<strong>${Number(result.points || 0).toLocaleString('ja-JP')}</strong><span>pt獲得！</span>`;
   elements.campaignCode.textContent = result.campaignCode || '';
   elements.resultPanel.hidden = false;
   elements.resultPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -147,8 +189,8 @@ async function copyCampaignCode() {
     textarea.remove();
   }
 
-  elements.copyMessage.textContent = 'キャンペーンコードをコピーしました。';
-  setTimeout(() => { elements.copyMessage.textContent = ''; }, 2500);
+  elements.copyMessage.textContent = 'コピーしました';
+  setTimeout(() => { elements.copyMessage.textContent = ''; }, 2000);
 }
 
 function getOrCreateDeviceId() {

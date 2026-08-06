@@ -560,3 +560,184 @@ h2 {
   .garapon-area { min-height: 325px; }
   .garapon { transform: scale(.9); transform-origin: center top; margin-bottom: -24px; }
 }
+
+/* v4: 操作案内・結果表示・受取導線 */
+.action-guide {
+  min-height: 1.7em;
+  margin: 0 auto 12px;
+  color: #6d5c79;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.draw-button.is-stop {
+  background: linear-gradient(180deg, #765bd4, #5638b0);
+  box-shadow: 0 8px 0 #3f2987, 0 14px 26px rgba(83, 54, 174, .25);
+}
+
+.draw-button.is-stop:not(.is-ready) {
+  opacity: .72;
+}
+
+.draw-button.is-stop.is-ready {
+  background: linear-gradient(180deg, #ff6a73, #e53d52);
+  box-shadow: 0 8px 0 #ae2638, 0 14px 26px rgba(211, 49, 72, .28);
+  animation: stopPulse 1s ease-in-out infinite;
+}
+
+@keyframes stopPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+
+/* 持ち手を使わず、ドラムだけが自然に回転する */
+.garapon.spinning .garapon-drum {
+  animation-duration: .52s;
+}
+
+.result-panel {
+  padding: 30px 22px 26px;
+}
+
+.result-label {
+  margin-bottom: 8px;
+  font-size: 14px;
+  letter-spacing: .12em;
+}
+
+.congratulations {
+  color: var(--deep-pink);
+  font-size: clamp(25px, 7vw, 38px);
+  line-height: 1.35;
+}
+
+.result-rank {
+  display: inline-flex;
+  margin: 14px 0 5px;
+  padding: 5px 15px;
+  border-radius: 999px;
+  color: #fff;
+  background: #6b4ac8;
+  font-size: clamp(17px, 4.8vw, 23px);
+  font-weight: 900;
+}
+
+.result-points {
+  margin: 8px 0 22px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .25em;
+  color: #5f41b7;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.result-points strong {
+  font-size: clamp(48px, 14vw, 72px);
+  font-weight: 900;
+}
+
+.result-points span {
+  display: inline;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(20px, 5.6vw, 28px);
+  font-weight: 900;
+}
+
+.code-box {
+  padding: 16px 17px 17px;
+}
+
+.code-box p {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 390px);
+  margin: 0 auto;
+}
+
+.code-row strong {
+  min-width: 0;
+  font-size: clamp(24px, 7vw, 34px);
+  letter-spacing: .07em;
+  overflow-wrap: anywhere;
+}
+
+.copy-icon-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border-radius: 10px !important;
+}
+
+.copy-icon-button svg {
+  width: 21px;
+  height: 21px;
+  fill: currentColor;
+}
+
+.claim-button {
+  width: min(100%, 390px);
+  min-height: 56px;
+  margin: 8px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(180deg, #ff6aa9, #e9367d);
+  box-shadow: 0 7px 0 #b91e61, 0 12px 24px rgba(219,43,119,.24);
+  font-size: 17px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.claim-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 3px 0 #b91e61, 0 7px 16px rgba(219,43,119,.2);
+}
+
+.copy-message {
+  min-height: 1.4em;
+  margin: 7px 0 2px;
+}
+
+.deadline {
+  margin-top: 18px;
+}
+
+@media (max-width: 420px) {
+  .result-panel {
+    padding-inline: 15px;
+  }
+
+  .code-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+  }
+
+  .result-points strong {
+    font-size: clamp(46px, 15vw, 62px);
+  }
+
+  .result-points span {
+    font-size: clamp(18px, 5.5vw, 23px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-button.is-stop.is-ready {
+    animation: none;
+  }
+}
