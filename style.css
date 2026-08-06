@@ -772,3 +772,170 @@ h2 {
     font-size: 17px;
   }
 }
+
+/* v6: 結果画面のスマホ幅固定・見出しバランス調整 */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.page-shell,
+.result-panel,
+.result-panel > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.result-panel {
+  width: 100%;
+  overflow: hidden;
+  padding: 28px 18px 25px;
+  text-align: center;
+}
+
+.result-label {
+  margin: 0 0 5px;
+  color: var(--deep-pink);
+  font-size: clamp(20px, 5.5vw, 24px);
+  line-height: 1.3;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.congratulations {
+  width: 100%;
+  margin: 0 0 10px;
+  color: var(--deep-pink);
+  font-size: clamp(15px, 4.15vw, 19px);
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: -.045em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.result-rank {
+  margin-top: 8px;
+}
+
+.result-points {
+  max-width: 100%;
+}
+
+.code-box,
+.code-row,
+.claim-button {
+  max-width: 100%;
+}
+
+@media (max-width: 380px) {
+  .page-shell {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .result-panel {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .result-label {
+    font-size: 20px;
+  }
+
+  .congratulations {
+    font-size: 15px;
+    letter-spacing: -.06em;
+  }
+}
+
+/* v6: スマホ結果画面の横はみ出し防止と見出しバランス */
+html,
+body,
+.page-shell,
+.result-panel {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.result-panel {
+  width: 100%;
+  min-width: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.result-label {
+  margin: 0 0 3px;
+  font-size: clamp(20px, 5.4vw, 24px);
+  line-height: 1.3;
+  letter-spacing: .06em;
+  text-align: center;
+}
+
+.congratulations {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: clamp(15px, 4.1vw, 19px);
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+}
+
+.result-rank {
+  margin-top: 12px;
+}
+
+@media (max-width: 380px) {
+  .result-panel {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .result-label {
+    font-size: 20px;
+  }
+
+  .congratulations {
+    font-size: 15px;
+  }
+}
+
+
+/* v7: 結果見出しの最終調整（スマホで横スクロールさせない） */
+.result-label {
+  margin: 0 0 2px !important;
+  font-size: clamp(22px, 6vw, 28px) !important;
+  line-height: 1.25 !important;
+  letter-spacing: .06em !important;
+  white-space: nowrap;
+}
+
+.congratulations {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+  font-size: clamp(17px, 4.5vw, 21px) !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  overflow: visible !important;
+}
+
+.result-panel,
+.result-panel > * {
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .result-label { font-size: 22px !important; }
+  .congratulations { font-size: 17px !important; }
+}
