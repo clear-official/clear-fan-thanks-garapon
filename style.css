@@ -525,7 +525,20 @@ h2 {
 }
 
 @keyframes confettiFall {
-  to { transform: translate3d(var(--drift), 110vh, 0) rotate(720deg); }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -24px, 0) rotate(0deg) scale(.9);
+  }
+  8% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 104vh, 0) rotate(720deg) scale(.72);
+  }
 }
 
 .sr-only {
@@ -601,15 +614,21 @@ h2 {
 }
 
 .result-label {
-  margin-bottom: 8px;
-  font-size: 14px;
-  letter-spacing: .12em;
+  margin: 0 0 3px;
+  font-size: clamp(18px, 5vw, 22px);
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: .08em;
 }
 
 .congratulations {
+  margin: 0 0 9px;
   color: var(--deep-pink);
-  font-size: clamp(25px, 7vw, 38px);
+  font-size: clamp(18px, 4.8vw, 23px);
   line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .result-rank {
@@ -742,54 +761,14 @@ h2 {
   }
 }
 
-/* 結果画面の文字バランス調整 */
-.result-label {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: .08em;
-}
 
-.congratulations {
-  margin: 0;
-  color: var(--deep-pink);
-  font-size: clamp(20px, 5.3vw, 25px);
-  line-height: 1.35;
-  white-space: nowrap;
-}
-
-.result-rank {
-  margin: 12px 0 8px;
-  font-size: clamp(16px, 4.4vw, 20px);
-}
-
-.result-points {
-  margin: 4px 0 20px;
-  gap: .2em;
-}
-
-.result-points strong {
-  font-size: clamp(40px, 11vw, 54px);
-}
-
-.result-points span {
-  font-size: clamp(20px, 5.3vw, 24px);
-}
-
-@media (max-width: 380px) {
-  .congratulations {
-    font-size: 19px;
-  }
-
+/* v5: 結果見出しと紙吹雪の最終調整 */
+@media (max-width: 360px) {
   .result-label {
+    font-size: 18px;
+  }
+
+  .congratulations {
     font-size: 17px;
-  }
-
-  .result-points strong {
-    font-size: 42px;
-  }
-
-  .result-points span {
-    font-size: 19px;
   }
 }

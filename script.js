@@ -258,6 +258,6 @@ function launchConfetti() {
     piece.style.setProperty('--drift', `${-90 + Math.random() * 180}px`);
     piece.style.animationDelay = `${Math.random() * .35}s`;
     elements.confettiLayer.appendChild(piece);
-    setTimeout(() => piece.remove(), 4600);
+    piece.addEventListener('animationend', () => piece.remove(), { once: true });
   }
 }
