@@ -741,3 +741,55 @@ h2 {
     animation: none;
   }
 }
+
+/* 結果画面の文字バランス調整 */
+.result-label {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.congratulations {
+  margin: 0;
+  color: var(--deep-pink);
+  font-size: clamp(20px, 5.3vw, 25px);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.result-rank {
+  margin: 12px 0 8px;
+  font-size: clamp(16px, 4.4vw, 20px);
+}
+
+.result-points {
+  margin: 4px 0 20px;
+  gap: .2em;
+}
+
+.result-points strong {
+  font-size: clamp(40px, 11vw, 54px);
+}
+
+.result-points span {
+  font-size: clamp(20px, 5.3vw, 24px);
+}
+
+@media (max-width: 380px) {
+  .congratulations {
+    font-size: 19px;
+  }
+
+  .result-label {
+    font-size: 17px;
+  }
+
+  .result-points strong {
+    font-size: 42px;
+  }
+
+  .result-points span {
+    font-size: 19px;
+  }
+}
