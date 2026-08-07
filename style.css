@@ -939,3 +939,52 @@ body,
   .result-label { font-size: 22px !important; }
   .congratulations { font-size: 17px !important; }
 }
+
+
+/* v8: ポイント受け取りボタンを廃止し、マイページからの受取案内に変更 */
+.claim-button {
+  display: none !important;
+}
+
+.claim-guide {
+  width: min(100%, 390px);
+  margin: 10px auto 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(163, 111, 194, .28);
+  border-radius: 14px;
+  background: rgba(250, 246, 255, .86);
+  text-align: center;
+}
+
+.claim-guide__title {
+  margin: 0 0 6px;
+  color: #744a91;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.claim-guide__text {
+  margin: 0;
+  color: #51455b;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.claim-guide__text strong {
+  color: #40274f;
+  font-weight: 900;
+}
+
+@media (max-width: 420px) {
+  .claim-guide {
+    padding: 12px 13px;
+  }
+
+  .claim-guide__title {
+    font-size: 13px;
+  }
+
+  .claim-guide__text {
+    font-size: 12.5px;
+  }
+}
