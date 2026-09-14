@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff5b9b" />
+  <title>ファン感謝祭｜ガラポン抽選</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=202609" />
+</head>
+<body>
+  <div class="confetti-layer" aria-hidden="true"></div>
+
+  <main class="page-shell">
+    <section class="hero" aria-labelledby="page-title">
+      <img class="banner" src="assets/banner.png" alt="ファン感謝祭 口コミ・体験談を教えてください" />
+      <h1 id="page-title" class="sr-only">ファン感謝祭 ガラポン抽選</h1>
+    </section>
+
+    <section class="lottery-card" aria-live="polite">
+      <h2>ガラポンを回して<br />結果を確認してください</h2>
+
+      <div id="garaponArea" class="garapon-area">
+        <div id="garapon" class="garapon" aria-hidden="true">
+          <div class="garapon-shadow"></div>
+          <div class="garapon-drum">
+            <span class="garapon-moon">☾</span>
+            <span class="garapon-star garapon-star-1">✦</span>
+            <span class="garapon-star garapon-star-2">✧</span>
+            <span class="garapon-star garapon-star-3">★</span>
+            <span class="garapon-line"></span>
+          </div>
+          <div class="garapon-axis"></div>
+          <div class="garapon-support garapon-support-left"></div>
+          <div class="garapon-support garapon-support-right"></div>
+          <div class="garapon-chute"></div>
+          <div class="garapon-base"></div>
+          <div class="garapon-tray"></div>
+          <div id="lotteryBall" class="lottery-ball"></div>
+        </div>
+      </div>
+
+      <div id="statusBox" class="status-box" hidden></div>
+      <p id="actionGuide" class="action-guide">ボタンを押すとガラポンが回り始めます</p>
+
+      <button id="drawButton" class="draw-button" type="button" disabled>
+        <span id="drawButtonText">ガラポンを回す</span>
+      </button>
+
+      <p class="period">抽選期間：2026年9月16日 0:00〜9月18日 24:00</p>
+    </section>
+
+    <section id="resultPanel" class="result-panel" hidden>
+      <p class="result-label">抽選結果</p>
+      <h2 class="congratulations">おめでとうございます！✨</h2>
+      <p id="resultRank" class="result-rank">参加賞</p>
+      <p id="resultPoints" class="result-points"><strong>500</strong><span>pt獲得！</span></p>
+
+      <div class="code-box">
+        <p>キャンペーンコード</p>
+        <div class="code-row">
+          <strong id="campaignCode">P6KT4N8RX</strong>
+          <button id="copyButton" class="copy-icon-button" type="button" aria-label="キャンペーンコードをコピー" title="コピー">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V5.8C8 4.8 8.8 4 9.8 4h8.4c1 0 1.8.8 1.8 1.8v8.4c0 1-.8 1.8-1.8 1.8H17v1.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8V8.8C5 7.8 5.8 7 6.8 7H8Zm2 0h5.2c1 0 1.8.8 1.8 1.8V14h1V6h-8v1Zm5 2H7v8h8V9Z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <p id="copyMessage" class="copy-message" aria-live="polite"></p>
+      <div class="claim-guide" role="note" aria-label="ポイントの受け取り方法">
+        <p class="claim-guide__title">ポイントのお受け取り方法</p>
+        <p class="claim-guide__text">
+          <strong>マイページ ＞ キャンペーンコード入力</strong> より、<br>
+          表示されたコードをご入力のうえ、ポイントをお受け取りくださいませ。
+        </p>
+      </div>
+      <p class="deadline">コード利用期限：2026年9月19日 24:00まで</p>
+    </section>
+
+    <p class="notice">キャンペーンコードは、お一人につき1回のみご利用いただけます。</p>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay" hidden>
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <p>確認中です…</p>
+  </div>
+
+  <script src="script.js?v=202609"></script>
+</body>
+</html>
