@@ -926,217 +926,191 @@ function cryptoRandomString(length) {
    JSONP通信
 ======================================== */
 
+let jsonpRequestCounter = 0;
+
 function jsonpRequest(params) {
+  return new Promise(function (resolve, reject) {
 
-  return new Promise(
-    function (resolve, reject) {
+    jsonpRequestCounter += 1;
 
-      const callbackName =
-        '__fanFestivalCallback_' +
-        Date.now() +
-        '_' +
-        Math.floor(
-          Math.random() *
-          1000000
-        );
+    const callbackName =
+      'fanFestivalCallback_' + jsonpRequestCounter;
 
+    const script =
+      document.createElement('script');
 
-      const script =
-        document.createElement(
-          'script'
-        );
+    let finished = false;
+    let timeoutId = null;
 
 
-      let finished =
-        false;
-
-
-      let timeoutId = null;
-
-
-      function cleanup() {
-
-        if (
-          script.parentNode
-        ) {
-
-          script.parentNode.removeChild(
-            script
-          );
-        }
-
-
-        /*
-         * Safari対策として
-         * callback削除を少し遅らせる
-         */
-
-        window.setTimeout(
-          function () {
-
-            try {
-
-              delete window[
-                callbackName
-              ];
-
-            } catch (error) {
-
-              window[
-                callbackName
-              ] = undefined;
-            }
-
-          },
-          100
-        );
+    function cleanup() {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
 
-
-      function success(data) {
-
-        if (finished) {
-          return;
+      window.setTimeout(function () {
+        try {
+          delete window[callbackName];
+        } catch (error) {
+          window[callbackName] = undefined;
         }
+      }, 1000);
+    }
 
 
-        finished =
-          true;
-
-
-        if (timeoutId) {
-
-          window.clearTimeout(
-            timeoutId
-          );
-        }
-
-
-        cleanup();
-
-
-        resolve(data);
+    function finishSuccess(data) {
+      if (finished) {
+        return;
       }
 
+      finished = true;
 
-      function failure(error) {
-
-        if (finished) {
-          return;
-        }
-
-
-        finished =
-          true;
-
-
-        if (timeoutId) {
-
-          window.clearTimeout(
-            timeoutId
-          );
-        }
-
-
-        cleanup();
-
-
-        reject(error);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
       }
 
+      cleanup();
+      resolve(data);
+    }
 
-      /*
-       * GASから呼ばれるcallback
-       */
 
-      window[
+    function finishError(message) {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+
+      cleanup();
+
+      reject(
+        new Error(message)
+      );
+    }
+
+
+    /*
+     * GASから直接呼ばれるグローバル関数
+     */
+    window[callbackName] = function (data) {
+      console.log(
+        'GAS RESPONSE:',
+        params.action,
+        data
+      );
+
+      finishSuccess(data);
+    };
+
+
+    /*
+     * URLを明示的に作成
+     */
+    const requestUrl =
+      GAS_URL +
+      '?action=' +
+      encodeURIComponent(
+        params.action || 'status'
+      ) +
+      '&deviceId=' +
+      encodeURIComponent(
+        params.deviceId || ''
+      ) +
+      '&callback=' +
+      encodeURIComponent(
         callbackName
-      ] = function (data) {
+      ) +
+      '&cacheBust=' +
+      Date.now();
 
-        success(data);
+
+    console.log(
+      'GAS REQUEST:',
+      params.action,
+      requestUrl
+    );
+
+
+    script.type =
+      'text/javascript';
+
+    script.async =
+      true;
+
+    script.src =
+      requestUrl;
+
+
+    /*
+     * ネットワークエラー
+     */
+    script.onerror =
+      function () {
+
+        console.error(
+          'GAS SCRIPT ERROR:',
+          params.action
+        );
+
+        finishError(
+          'JSONP network error'
+        );
       };
 
 
-      /*
-       * URLSearchParamsを使用せず
-       * URLを直接組み立てる
-       */
+    /*
+     * 読み込み自体が完了した場合
+     */
+    script.onload =
+      function () {
 
-      const query = [
-
-        'action=' +
-          encodeURIComponent(
-            params.action ||
-            'status'
-          ),
-
-        'deviceId=' +
-          encodeURIComponent(
-            params.deviceId ||
-            ''
-          ),
-
-        'callback=' +
-          encodeURIComponent(
-            callbackName
-          ),
-
-        '_=' +
-          Date.now()
-
-      ].join('&');
-
-
-      script.src =
-        GAS_URL +
-        '?' +
-        query;
-
-
-      script.async =
-        true;
-
-
-      script.onerror =
-        function () {
-
-          failure(
-            new Error(
-              'JSONP network error'
-            )
-          );
-        };
-
-
-      timeoutId =
-        window.setTimeout(
-          function () {
-
-            failure(
-              new Error(
-                'JSONP timeout'
-              )
-            );
-
-          },
-          REQUEST_TIMEOUT_MS
+        console.log(
+          'GAS SCRIPT LOADED:',
+          params.action
         );
 
+        /*
+         * callbackが実行されていれば
+         * finished=trueになっている。
+         *
+         * callback実行前に即エラー扱いにはしない。
+         */
+      };
 
-      /*
-       * JSONPスクリプトを読み込む
-       */
 
-      (
-        document.head ||
-        document.documentElement
-      ).appendChild(
-        script
+    /*
+     * 30秒でタイムアウト
+     */
+    timeoutId =
+      window.setTimeout(
+        function () {
+
+          console.error(
+            'GAS TIMEOUT:',
+            params.action
+          );
+
+          finishError(
+            'JSONP timeout'
+          );
+
+        },
+        30000
       );
-    }
-  );
-}
 
+
+    /*
+     * DOMへ追加して実行
+     */
+    document.head.appendChild(
+      script
+    );
+  });
+}
 
 /* ========================================
    Loading
