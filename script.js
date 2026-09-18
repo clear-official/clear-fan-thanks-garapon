@@ -1,10 +1,18 @@
 'use strict';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzAFDaOgBfuQP1Rl7OcAF3hHZY0jkzdoMSz3sdOA52-1H2KaA0yWg9BH70z2cDuWtsBQg/exec';
-const DEVICE_KEY = 'clearFanThanksFestivalDeviceId202609';
+const GAS_URL =
+  'https://script.google.com/macros/s/AKfycbzAFDaOgBfuQP1Rl7OcAF3hHZY0jkzdoMSz3sdOA52-1H2KaA0yWg9BH70z2cDuWtsBQg/exec';
+
+const DEVICE_KEY =
+  'clearFanThanksFestivalDeviceId202609';
 
 const STOP_ENABLE_DELAY_MS = 1200;
 const REQUEST_TIMEOUT_MS = 20000;
+
+
+/* ========================================
+   DOM
+======================================== */
 
 const elements = {
   drawButton: document.getElementById('drawButton'),
@@ -22,16 +30,24 @@ const elements = {
   confettiLayer: document.querySelector('.confetti-layer')
 };
 
+
 let lotteryState = 'idle';
 
-const deviceId = getOrCreateDeviceId();
+const deviceId =
+  getOrCreateDeviceId();
 
-window.addEventListener('DOMContentLoaded', initialize);
+
+window.addEventListener(
+  'DOMContentLoaded',
+  initialize
+);
+
 
 elements.drawButton.addEventListener(
   'click',
   handleLotteryButton
 );
+
 
 elements.copyButton.addEventListener(
   'click',
@@ -39,9 +55,9 @@ elements.copyButton.addEventListener(
 );
 
 
-/* ================================
-   初期表示
-================================ */
+/* ========================================
+   初期化
+======================================== */
 
 async function initialize() {
 
@@ -49,22 +65,26 @@ async function initialize() {
 
   try {
 
-    const response = await jsonpRequest({
-      action: 'status',
-      deviceId
-    });
+    const response =
+      await jsonpRequest({
+        action: 'status',
+        deviceId: deviceId
+      });
 
     handleStatusResponse(response);
 
   } catch (error) {
 
-    console.error('status error:', error);
+    console.error(
+      'STATUS ERROR:',
+      error
+    );
+
+    elements.drawButton.disabled = true;
 
     showStatus(
       '通信に失敗しました。ページを再読み込みしてください。'
     );
-
-    elements.drawButton.disabled = true;
 
   } finally {
 
@@ -73,46 +93,56 @@ async function initialize() {
 }
 
 
-/* ================================
+/* ========================================
    イベント状態
-================================ */
+======================================== */
 
 function handleStatusResponse(response) {
 
-  if (!response || response.ok !== true) {
+  if (
+    !response ||
+    response.ok !== true
+  ) {
 
     elements.drawButton.disabled = true;
 
     showStatus(
-      response?.message ||
-      '状態を確認できませんでした。'
+      response && response.message
+        ? response.message
+        : '状態を確認できませんでした。'
     );
 
     return;
   }
 
 
-  /* 抽選済み */
+  /*
+   * すでに抽選済み
+   */
 
   if (
     response.status === 'ALREADY_DRAWN' &&
     response.result
   ) {
 
+    lotteryState = 'completed';
+
     showResult(
       response.result,
       false
     );
 
-    lotteryState = 'completed';
-
     return;
   }
 
 
-  /* 抽選可能 */
+  /*
+   * 抽選可能
+   */
 
-  if (response.status === 'AVAILABLE') {
+  if (
+    response.status === 'AVAILABLE'
+  ) {
 
     hideStatus();
 
@@ -122,7 +152,9 @@ function handleStatusResponse(response) {
   }
 
 
-  /* 開催前・終了・上限到達 */
+  /*
+   * 開催前 / 終了 / 上限到達
+   */
 
   elements.drawButton.disabled = true;
 
@@ -133,13 +165,15 @@ function handleStatusResponse(response) {
 }
 
 
-/* ================================
-   ボタン処理
-================================ */
+/* ========================================
+   ガラポンボタン
+======================================== */
 
 function handleLotteryButton() {
 
-  if (lotteryState === 'idle') {
+  if (
+    lotteryState === 'idle'
+  ) {
 
     startSpinning();
 
@@ -147,7 +181,9 @@ function handleLotteryButton() {
   }
 
 
-  if (lotteryState === 'readyToStop') {
+  if (
+    lotteryState === 'readyToStop'
+  ) {
 
     stopAndReveal();
 
@@ -156,136 +192,167 @@ function handleLotteryButton() {
 }
 
 
-/* ================================
+/* ========================================
    ガラポン開始
-================================ */
+======================================== */
 
 function startSpinning() {
 
-  if (lotteryState !== 'idle') {
+  if (
+    lotteryState !== 'idle'
+  ) {
     return;
   }
 
-  lotteryState = 'spinningLocked';
+
+  lotteryState =
+    'spinningLocked';
+
 
   hideStatus();
 
-  elements.resultPanel.hidden = true;
+
+  elements.resultPanel.hidden =
+    true;
+
 
   elements.garapon.classList.remove(
     'releasing'
   );
 
+
   elements.garapon.classList.add(
     'spinning'
   );
 
-  elements.drawButton.disabled = true;
+
+  elements.drawButton.disabled =
+    true;
+
 
   elements.drawButton.classList.add(
     'is-stop'
   );
 
+
   elements.drawButton.classList.remove(
     'is-ready'
   );
 
+
   elements.drawButtonText.textContent =
     'まもなくストップできます';
 
-  elements.actionGuide.hidden = false;
+
+  elements.actionGuide.hidden =
+    false;
+
 
   elements.actionGuide.textContent =
     'ガラポンが回っています…';
 
 
-  window.setTimeout(() => {
+  window.setTimeout(
+    function () {
 
-    if (
-      lotteryState !==
-      'spinningLocked'
-    ) {
-      return;
-    }
+      if (
+        lotteryState !==
+        'spinningLocked'
+      ) {
+        return;
+      }
 
-    lotteryState =
-      'readyToStop';
 
-    elements.drawButton.disabled =
-      false;
+      lotteryState =
+        'readyToStop';
 
-    elements.drawButtonText.textContent =
-      'ストップ！';
 
-    elements.actionGuide.textContent =
-      '今、ストップできます。下のボタンを押してください';
+      elements.drawButton.disabled =
+        false;
 
-    elements.drawButton.classList.add(
-      'is-ready'
-    );
 
-  }, STOP_ENABLE_DELAY_MS);
+      elements.drawButtonText.textContent =
+        'ストップ！';
+
+
+      elements.actionGuide.textContent =
+        '今、ストップできます。下のボタンを押してください';
+
+
+      elements.drawButton.classList.add(
+        'is-ready'
+      );
+
+    },
+    STOP_ENABLE_DELAY_MS
+  );
 }
 
 
-/* ================================
-   STOP → 抽選API → 結果表示
-================================ */
+/* ========================================
+   ストップ → 抽選
+======================================== */
 
 async function stopAndReveal() {
 
   if (
-    lotteryState !==
-    'readyToStop'
+    lotteryState !== 'readyToStop'
   ) {
     return;
   }
 
-  lotteryState = 'stopping';
 
-  elements.drawButton.disabled = true;
+  lotteryState =
+    'stopping';
+
+
+  elements.drawButton.disabled =
+    true;
+
 
   elements.drawButton.classList.remove(
     'is-ready'
   );
 
+
   elements.drawButtonText.textContent =
     '結果を確認中…';
+
 
   elements.actionGuide.textContent =
     '玉が出てくるまで少しお待ちください';
 
 
-  let response;
+  let response = null;
 
 
   try {
 
     /*
-     * 重要：
-     * 抽選APIはSTOPを押した時点で実行する
+     * STOPを押したタイミングで
+     * GASへ抽選リクエスト
      */
 
-    response = await jsonpRequest({
-      action: 'draw',
-      deviceId
-    });
+    response =
+      await jsonpRequest({
+        action: 'draw',
+        deviceId: deviceId
+      });
 
 
-  } catch (error) {
+  } catch (drawError) {
 
     console.error(
-      'draw error:',
-      error
+      'DRAW ERROR:',
+      drawError
     );
 
 
     /*
-     * drawの返答だけ取得できなかった可能性があるため、
-     * statusを再確認する。
+     * GAS側では抽選済みなのに
+     * 結果だけ受け取れなかった可能性がある。
      *
-     * GAS側ですでに抽選が完了していれば
-     * ALREADY_DRAWNとして結果を復元できる。
+     * statusを再取得して結果を復元する。
      */
 
     try {
@@ -293,24 +360,24 @@ async function stopAndReveal() {
       const recovery =
         await jsonpRequest({
           action: 'status',
-          deviceId
+          deviceId: deviceId
         });
 
 
       if (
         recovery &&
         recovery.ok === true &&
-        recovery.status ===
-          'ALREADY_DRAWN' &&
+        recovery.status === 'ALREADY_DRAWN' &&
         recovery.result
       ) {
 
-        response = recovery;
+        response =
+          recovery;
 
       } else {
 
         throw new Error(
-          '抽選結果を確認できませんでした。'
+          'Result recovery failed'
         );
       }
 
@@ -318,28 +385,36 @@ async function stopAndReveal() {
     } catch (recoveryError) {
 
       console.error(
-        'recovery error:',
+        'RECOVERY ERROR:',
         recoveryError
       );
+
 
       elements.garapon.classList.remove(
         'spinning'
       );
 
-      showStatus(
-        '通信に失敗しました。ページを再読み込みしてください。抽選済みの場合は結果が再表示されます。'
-      );
+
+      lotteryState =
+        'error';
+
 
       elements.drawButton.disabled =
         true;
 
+
       elements.drawButtonText.textContent =
         '確認できませんでした';
+
 
       elements.actionGuide.textContent =
         'ページを再読み込みしてください';
 
-      lotteryState = 'error';
+
+      showStatus(
+        '通信に失敗しました。ページを再読み込みしてください。抽選済みの場合は結果が再表示されます。'
+      );
+
 
       return;
     }
@@ -356,7 +431,7 @@ async function stopAndReveal() {
 
 
   /*
-   * API結果チェック
+   * APIエラー
    */
 
   if (
@@ -365,22 +440,25 @@ async function stopAndReveal() {
   ) {
 
     showStatus(
-      response?.message ||
-      '抽選結果を取得できませんでした。'
+      response && response.message
+        ? response.message
+        : '抽選結果を取得できませんでした。'
     );
 
 
     if (
-      response?.status ===
-        'EVENT_ENDED' ||
-      response?.status ===
-        'LIMIT_REACHED'
+      response &&
+      (
+        response.status === 'EVENT_ENDED' ||
+        response.status === 'LIMIT_REACHED'
+      )
     ) {
 
       elements.drawButton.disabled =
         true;
 
-      lotteryState = 'completed';
+      lotteryState =
+        'completed';
 
       return;
     }
@@ -393,27 +471,32 @@ async function stopAndReveal() {
 
 
   /*
-   * ALREADY_DRAWN / DRAW_COMPLETED
-   * どちらでもresultがあれば表示
+   * resultが無い場合
    */
 
-  if (!response.result) {
+  if (
+    !response.result
+  ) {
+
+    lotteryState =
+      'error';
+
+
+    elements.drawButton.disabled =
+      true;
+
 
     showStatus(
       '抽選結果を取得できませんでした。ページを再読み込みしてください。'
     );
 
-    elements.drawButton.disabled =
-      true;
-
-    lotteryState = 'error';
 
     return;
   }
 
 
   /*
-   * 玉の色
+   * 玉の色変更
    */
 
   setBallColor(
@@ -422,7 +505,7 @@ async function stopAndReveal() {
 
 
   /*
-   * 玉排出アニメーション
+   * 玉排出演出
    */
 
   elements.garapon.classList.add(
@@ -442,41 +525,48 @@ async function stopAndReveal() {
     true
   );
 
+
   lotteryState =
     'completed';
 }
 
 
-/* ================================
+/* ========================================
    待機状態
-================================ */
+======================================== */
 
 function setIdleState() {
 
-  lotteryState = 'idle';
+  lotteryState =
+    'idle';
+
 
   elements.drawButton.disabled =
     false;
+
 
   elements.drawButton.classList.remove(
     'is-stop',
     'is-ready'
   );
 
+
   elements.drawButtonText.textContent =
     'ガラポンを回す';
 
+
   elements.actionGuide.hidden =
     false;
+
 
   elements.actionGuide.textContent =
     'ボタンを押すとガラポンが回り始めます';
 }
 
 
-/* ================================
-   玉の色
-================================ */
+/* ========================================
+   玉カラー
+======================================== */
 
 function setBallColor(rank) {
 
@@ -485,9 +575,11 @@ function setBallColor(rank) {
       'lotteryBall'
     );
 
+
   if (!ball) {
     return;
   }
+
 
   const colors = {
 
@@ -511,9 +603,9 @@ function setBallColor(rank) {
 }
 
 
-/* ================================
+/* ========================================
    結果表示
-================================ */
+======================================== */
 
 function showResult(
   result,
@@ -524,16 +616,20 @@ function showResult(
     'spinning'
   );
 
+
   elements.drawButton.disabled =
     true;
+
 
   elements.drawButton.classList.remove(
     'is-stop',
     'is-ready'
   );
 
+
   elements.statusBox.hidden =
     true;
+
 
   elements.actionGuide.hidden =
     true;
@@ -551,7 +647,9 @@ function showResult(
 
 
   elements.resultPoints.innerHTML =
-    `<strong>${points.toLocaleString('ja-JP')}</strong><span>pt獲得！</span>`;
+    '<strong>' +
+    points.toLocaleString('ja-JP') +
+    '</strong><span>pt獲得！</span>';
 
 
   elements.campaignCode.textContent =
@@ -562,30 +660,35 @@ function showResult(
     false;
 
 
-  window.setTimeout(() => {
+  window.setTimeout(
+    function () {
 
-    elements.resultPanel.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
+      elements.resultPanel.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
 
-  }, 100);
+    },
+    100
+  );
 
 
   if (celebrate) {
+
     launchConfetti();
   }
 }
 
 
-/* ================================
-   ステータス表示
-================================ */
+/* ========================================
+   ステータス
+======================================== */
 
 function showStatus(message) {
 
   elements.statusBox.textContent =
     message;
+
 
   elements.statusBox.hidden =
     false;
@@ -597,14 +700,15 @@ function hideStatus() {
   elements.statusBox.hidden =
     true;
 
+
   elements.statusBox.textContent =
     '';
 }
 
 
-/* ================================
-   コードコピー
-================================ */
+/* ========================================
+   キャンペーンコードコピー
+======================================== */
 
 async function copyCampaignCode() {
 
@@ -646,12 +750,15 @@ async function copyCampaignCode() {
     'コピーしました';
 
 
-  window.setTimeout(() => {
+  window.setTimeout(
+    function () {
 
-    elements.copyMessage.textContent =
-      '';
+      elements.copyMessage.textContent =
+        '';
 
-  }, 2000);
+    },
+    2000
+  );
 }
 
 
@@ -662,19 +769,24 @@ function fallbackCopy(text) {
       'textarea'
     );
 
+
   textarea.value =
     text;
+
 
   textarea.setAttribute(
     'readonly',
     ''
   );
 
+
   textarea.style.position =
     'fixed';
 
+
   textarea.style.left =
     '-9999px';
+
 
   textarea.style.top =
     '0';
@@ -684,19 +796,22 @@ function fallbackCopy(text) {
     textarea
   );
 
+
   textarea.select();
+
 
   document.execCommand(
     'copy'
   );
 
+
   textarea.remove();
 }
 
 
-/* ================================
+/* ========================================
    deviceId
-================================ */
+======================================== */
 
 function getOrCreateDeviceId() {
 
@@ -724,7 +839,10 @@ function getOrCreateDeviceId() {
 
 
     value =
-      `DEV_${Date.now().toString(36)}_${randomPart}`;
+      'DEV_' +
+      Date.now().toString(36) +
+      '_' +
+      randomPart;
 
 
     localStorage.setItem(
@@ -739,25 +857,24 @@ function getOrCreateDeviceId() {
   } catch (error) {
 
     /*
-     * Safari等でlocalStorageが使えない場合も
-     * 一時deviceIdを作る
+     * localStorageが使えない環境用
      */
 
     return (
-      `DEV_${Date.now().toString(36)}_` +
+      'DEV_' +
+      Date.now().toString(36) +
+      '_' +
       cryptoRandomString(24)
     );
   }
 }
 
 
-/* ================================
+/* ========================================
    ランダム文字列
-================================ */
+======================================== */
 
-function cryptoRandomString(
-  length
-) {
+function cryptoRandomString(length) {
 
   const alphabet =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -794,26 +911,34 @@ function cryptoRandomString(
 
   return Array.from(
     bytes,
-    byte =>
-      alphabet[
+    function (byte) {
+
+      return alphabet[
         byte %
         alphabet.length
-      ]
+      ];
+    }
   ).join('');
 }
 
 
-/* ================================
+/* ========================================
    JSONP通信
-================================ */
+======================================== */
 
 function jsonpRequest(params) {
 
   return new Promise(
-    (resolve, reject) => {
+    function (resolve, reject) {
 
       const callbackName =
-        `__fanFestivalCallback_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+        '__fanFestivalCallback_' +
+        Date.now() +
+        '_' +
+        Math.floor(
+          Math.random() *
+          1000000
+        );
 
 
       const script =
@@ -826,51 +951,10 @@ function jsonpRequest(params) {
         false;
 
 
-      const timeoutId =
-        window.setTimeout(
-          () => {
-
-            finish(
-              new Error(
-                'Request timed out'
-              )
-            );
-
-          },
-          REQUEST_TIMEOUT_MS
-        );
+      let timeoutId = null;
 
 
-      function finish(
-        error,
-        data
-      ) {
-
-        if (finished) {
-          return;
-        }
-
-        finished = true;
-
-
-        window.clearTimeout(
-          timeoutId
-        );
-
-
-        try {
-
-          delete window[
-            callbackName
-          ];
-
-        } catch (deleteError) {
-
-          window[
-            callbackName
-          ] = undefined;
-        }
-
+      function cleanup() {
 
         if (
           script.parentNode
@@ -882,77 +966,165 @@ function jsonpRequest(params) {
         }
 
 
-        if (error) {
+        /*
+         * Safari対策として
+         * callback削除を少し遅らせる
+         */
 
-          reject(error);
+        window.setTimeout(
+          function () {
 
-        } else {
+            try {
 
-          resolve(data);
-        }
+              delete window[
+                callbackName
+              ];
+
+            } catch (error) {
+
+              window[
+                callbackName
+              ] = undefined;
+            }
+
+          },
+          100
+        );
       }
 
 
+      function success(data) {
+
+        if (finished) {
+          return;
+        }
+
+
+        finished =
+          true;
+
+
+        if (timeoutId) {
+
+          window.clearTimeout(
+            timeoutId
+          );
+        }
+
+
+        cleanup();
+
+
+        resolve(data);
+      }
+
+
+      function failure(error) {
+
+        if (finished) {
+          return;
+        }
+
+
+        finished =
+          true;
+
+
+        if (timeoutId) {
+
+          window.clearTimeout(
+            timeoutId
+          );
+        }
+
+
+        cleanup();
+
+
+        reject(error);
+      }
+
+
+      /*
+       * GASから呼ばれるcallback
+       */
+
       window[
         callbackName
-      ] = function(data) {
+      ] = function (data) {
 
-        finish(
-          null,
-          data
-        );
+        success(data);
       };
 
 
-      const query =
-        new URLSearchParams();
+      /*
+       * URLSearchParamsを使用せず
+       * URLを直接組み立てる
+       */
+
+      const query = [
+
+        'action=' +
+          encodeURIComponent(
+            params.action ||
+            'status'
+          ),
+
+        'deviceId=' +
+          encodeURIComponent(
+            params.deviceId ||
+            ''
+          ),
+
+        'callback=' +
+          encodeURIComponent(
+            callbackName
+          ),
+
+        '_=' +
+          Date.now()
+
+      ].join('&');
 
 
-      Object.keys(params).forEach(
-        key => {
-
-          query.set(
-            key,
-            String(params[key])
-          );
-        }
-      );
-
-
-      query.set(
-        'callback',
-        callbackName
-      );
-
-
-      query.set(
-        '_',
-        String(Date.now())
-      );
+      script.src =
+        GAS_URL +
+        '?' +
+        query;
 
 
       script.async =
         true;
 
 
-      script.src =
-        `${GAS_URL}?${query.toString()}`;
-
-
       script.onerror =
-        function() {
+        function () {
 
-          finish(
+          failure(
             new Error(
-              'Network error'
+              'JSONP network error'
             )
           );
         };
 
 
+      timeoutId =
+        window.setTimeout(
+          function () {
+
+            failure(
+              new Error(
+                'JSONP timeout'
+              )
+            );
+
+          },
+          REQUEST_TIMEOUT_MS
+        );
+
+
       /*
-       * headに入れる方が
-       * JSONPではSafari含め安定しやすい
+       * JSONPスクリプトを読み込む
        */
 
       (
@@ -966,40 +1138,51 @@ function jsonpRequest(params) {
 }
 
 
-/* ================================
+/* ========================================
    Loading
-================================ */
+======================================== */
 
 function setLoading(show) {
+
+  if (
+    !elements.loadingOverlay
+  ) {
+    return;
+  }
+
 
   elements.loadingOverlay.hidden =
     !show;
 }
 
 
-/* ================================
-   Utility
-================================ */
+/* ========================================
+   wait
+======================================== */
 
 function wait(ms) {
 
   return new Promise(
-    resolve =>
+    function (resolve) {
+
       window.setTimeout(
         resolve,
         ms
-      )
+      );
+    }
   );
 }
 
 
-/* ================================
+/* ========================================
    紙吹雪
-================================ */
+======================================== */
 
 function launchConfetti() {
 
-  if (!elements.confettiLayer) {
+  if (
+    !elements.confettiLayer
+  ) {
     return;
   }
 
@@ -1034,7 +1217,11 @@ function launchConfetti() {
 
 
     piece.style.left =
-      `${Math.random() * 100}%`;
+      (
+        Math.random() *
+        100
+      ) +
+      '%';
 
 
     piece.style.background =
@@ -1048,18 +1235,32 @@ function launchConfetti() {
 
     piece.style.setProperty(
       '--duration',
-      `${2.3 + Math.random() * 1.8}s`
+      (
+        2.3 +
+        Math.random() *
+        1.8
+      ) +
+      's'
     );
 
 
     piece.style.setProperty(
       '--drift',
-      `${-90 + Math.random() * 180}px`
+      (
+        -90 +
+        Math.random() *
+        180
+      ) +
+      'px'
     );
 
 
     piece.style.animationDelay =
-      `${Math.random() * 0.35}s`;
+      (
+        Math.random() *
+        0.35
+      ) +
+      's';
 
 
     elements.confettiLayer.appendChild(
@@ -1069,7 +1270,10 @@ function launchConfetti() {
 
     piece.addEventListener(
       'animationend',
-      () => piece.remove(),
+      function () {
+
+        piece.remove();
+      },
       {
         once: true
       }
