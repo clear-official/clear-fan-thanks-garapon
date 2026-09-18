@@ -7,7 +7,7 @@ const DEVICE_KEY =
   'clearFanThanksFestivalDeviceId202609';
 
 const STOP_ENABLE_DELAY_MS = 1200;
-const REQUEST_TIMEOUT_MS = 20000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 
 /* ========================================
@@ -37,6 +37,63 @@ const deviceId =
   getOrCreateDeviceId();
 
 
+/* ========================================
+   JSONP固定コールバック管理
+======================================== */
+
+let activeJsonpRequest = null;
+
+
+/*
+ * この関数はページを閉じるまで削除しない
+ */
+window.fanFestivalCallback = function (data) {
+
+  console.log(
+    'GAS RESPONSE:',
+    data
+  );
+
+
+  if (!activeJsonpRequest) {
+    return;
+  }
+
+
+  const request =
+    activeJsonpRequest;
+
+
+  activeJsonpRequest =
+    null;
+
+
+  if (request.timeoutId) {
+    window.clearTimeout(
+      request.timeoutId
+    );
+  }
+
+
+  if (
+    request.script &&
+    request.script.parentNode
+  ) {
+
+    request.script.parentNode.removeChild(
+      request.script
+    );
+  }
+
+
+  request.resolve(data);
+};
+
+
+/* ========================================
+   起動
+======================================== */
+
 window.addEventListener(
   'DOMContentLoaded',
   initialize
@@ -59,114 +116,32 @@ elements.copyButton.addEventListener(
    初期化
 ======================================== */
 
-async function initialize() {
+function initialize() {
 
-  setLoading(true);
+  /*
+   * ページ表示時にはGASへ通信しない。
+   *
+   * GAS側のdraw処理で
+   * ・開催期間
+   * ・抽選済み
+   * ・参加人数
+   * ・景品残数
+   * を判定する。
+   */
 
-  try {
+  setLoading(false);
 
-    const response =
-      await jsonpRequest({
-        action: 'status',
-        deviceId: deviceId
-      });
+  hideStatus();
 
-    handleStatusResponse(response);
+  elements.resultPanel.hidden =
+    true;
 
-  } catch (error) {
-
-    console.error(
-      'STATUS ERROR:',
-      error
-    );
-
-    elements.drawButton.disabled = true;
-
-    showStatus(
-      '通信に失敗しました。ページを再読み込みしてください。'
-    );
-
-  } finally {
-
-    setLoading(false);
-  }
+  setIdleState();
 }
 
 
 /* ========================================
-   イベント状態
-======================================== */
-
-function handleStatusResponse(response) {
-
-  if (
-    !response ||
-    response.ok !== true
-  ) {
-
-    elements.drawButton.disabled = true;
-
-    showStatus(
-      response && response.message
-        ? response.message
-        : '状態を確認できませんでした。'
-    );
-
-    return;
-  }
-
-
-  /*
-   * すでに抽選済み
-   */
-
-  if (
-    response.status === 'ALREADY_DRAWN' &&
-    response.result
-  ) {
-
-    lotteryState = 'completed';
-
-    showResult(
-      response.result,
-      false
-    );
-
-    return;
-  }
-
-
-  /*
-   * 抽選可能
-   */
-
-  if (
-    response.status === 'AVAILABLE'
-  ) {
-
-    hideStatus();
-
-    setIdleState();
-
-    return;
-  }
-
-
-  /*
-   * 開催前 / 終了 / 上限到達
-   */
-
-  elements.drawButton.disabled = true;
-
-  showStatus(
-    response.message ||
-    '現在は抽選できません。'
-  );
-}
-
-
-/* ========================================
-   ガラポンボタン
+   ボタン操作
 ======================================== */
 
 function handleLotteryButton() {
@@ -186,8 +161,6 @@ function handleLotteryButton() {
   ) {
 
     stopAndReveal();
-
-    return;
   }
 }
 
@@ -290,7 +263,7 @@ function startSpinning() {
 
 
 /* ========================================
-   ストップ → 抽選
+   STOP → 抽選
 ======================================== */
 
 async function stopAndReveal() {
@@ -329,8 +302,7 @@ async function stopAndReveal() {
   try {
 
     /*
-     * STOPを押したタイミングで
-     * GASへ抽選リクエスト
+     * STOPを押したときだけ抽選
      */
 
     response =
@@ -349,81 +321,34 @@ async function stopAndReveal() {
 
 
     /*
-     * GAS側では抽選済みなのに
-     * 結果だけ受け取れなかった可能性がある。
-     *
-     * statusを再取得して結果を復元する。
+     * GAS側で抽選だけ完了して、
+     * ブラウザが結果を受け取れなかった場合に備えて
+     * statusで結果を確認する。
      */
 
     try {
 
-      const recovery =
+      response =
         await jsonpRequest({
           action: 'status',
           deviceId: deviceId
         });
 
 
-      if (
-        recovery &&
-        recovery.ok === true &&
-        recovery.status === 'ALREADY_DRAWN' &&
-        recovery.result
-      ) {
-
-        response =
-          recovery;
-
-      } else {
-
-        throw new Error(
-          'Result recovery failed'
-        );
-      }
-
-
-    } catch (recoveryError) {
+    } catch (statusError) {
 
       console.error(
         'RECOVERY ERROR:',
-        recoveryError
+        statusError
       );
 
 
-      elements.garapon.classList.remove(
-        'spinning'
-      );
-
-
-      lotteryState =
-        'error';
-
-
-      elements.drawButton.disabled =
-        true;
-
-
-      elements.drawButtonText.textContent =
-        '確認できませんでした';
-
-
-      elements.actionGuide.textContent =
-        'ページを再読み込みしてください';
-
-
-      showStatus(
-        '通信に失敗しました。ページを再読み込みしてください。抽選済みの場合は結果が再表示されます。'
-      );
-
+      handleCommunicationFailure();
 
       return;
     }
   }
 
-
-  /*
-   * ガラポン停止
-   */
 
   elements.garapon.classList.remove(
     'spinning'
@@ -431,38 +356,76 @@ async function stopAndReveal() {
 
 
   /*
-   * APIエラー
+   * レスポンスそのものが異常
+   */
+
+  if (!response) {
+
+    handleCommunicationFailure();
+
+    return;
+  }
+
+
+  /*
+   * GAS側でエラー判定された場合
    */
 
   if (
-    !response ||
     response.ok !== true
   ) {
 
-    showStatus(
-      response && response.message
-        ? response.message
-        : '抽選結果を取得できませんでした。'
+    handleApiError(response);
+
+    return;
+  }
+
+
+  /*
+   * 通常のdraw結果
+   */
+
+  if (
+    response.result
+  ) {
+
+    await revealResult(
+      response.result
     );
 
+    return;
+  }
 
-    if (
-      response &&
-      (
-        response.status === 'EVENT_ENDED' ||
-        response.status === 'LIMIT_REACHED'
-      )
-    ) {
 
-      elements.drawButton.disabled =
-        true;
+  /*
+   * statusによる抽選済み復元
+   */
 
-      lotteryState =
-        'completed';
+  if (
+    response.status === 'ALREADY_DRAWN' &&
+    response.result
+  ) {
 
-      return;
-    }
+    await revealResult(
+      response.result
+    );
 
+    return;
+  }
+
+
+  /*
+   * statusを取得できたものの
+   * 抽選済みではなかった場合
+   */
+
+  if (
+    response.status === 'AVAILABLE'
+  ) {
+
+    showStatus(
+      '抽選結果を確認できませんでした。もう一度ガラポンを回してください。'
+    );
 
     setIdleState();
 
@@ -470,43 +433,25 @@ async function stopAndReveal() {
   }
 
 
-  /*
-   * resultが無い場合
-   */
-
-  if (
-    !response.result
-  ) {
-
-    lotteryState =
-      'error';
+  handleCommunicationFailure();
+}
 
 
-    elements.drawButton.disabled =
-      true;
+/* ========================================
+   結果演出
+======================================== */
 
+async function revealResult(result) {
 
-    showStatus(
-      '抽選結果を取得できませんでした。ページを再読み込みしてください。'
-    );
-
-
-    return;
-  }
-
-
-  /*
-   * 玉の色変更
-   */
-
-  setBallColor(
-    response.result.rank
+  elements.garapon.classList.remove(
+    'spinning'
   );
 
 
-  /*
-   * 玉排出演出
-   */
+  setBallColor(
+    result.rank
+  );
+
 
   elements.garapon.classList.add(
     'releasing'
@@ -516,18 +461,142 @@ async function stopAndReveal() {
   await wait(1250);
 
 
-  /*
-   * 結果表示
-   */
-
   showResult(
-    response.result,
+    result,
     true
   );
 
 
   lotteryState =
     'completed';
+}
+
+
+/* ========================================
+   GAS側エラー
+======================================== */
+
+function handleApiError(response) {
+
+  elements.garapon.classList.remove(
+    'spinning'
+  );
+
+
+  const message =
+    response.message ||
+    '現在は抽選できません。';
+
+
+  showStatus(message);
+
+
+  /*
+   * 抽選済みでresultが返っている場合
+   */
+
+  if (
+    response.status === 'ALREADY_DRAWN' &&
+    response.result
+  ) {
+
+    showResult(
+      response.result,
+      false
+    );
+
+
+    lotteryState =
+      'completed';
+
+    return;
+  }
+
+
+  /*
+   * イベント終了・上限到達など
+   */
+
+  if (
+    response.status === 'EVENT_ENDED' ||
+    response.status === 'LIMIT_REACHED' ||
+    response.status === 'EVENT_NOT_STARTED'
+  ) {
+
+    lotteryState =
+      'completed';
+
+
+    elements.drawButton.disabled =
+      true;
+
+
+    elements.drawButton.classList.remove(
+      'is-stop',
+      'is-ready'
+    );
+
+
+    elements.drawButtonText.textContent =
+      '抽選できません';
+
+
+    elements.actionGuide.hidden =
+      true;
+
+
+    return;
+  }
+
+
+  /*
+   * その他は再試行可能
+   */
+
+  setIdleState();
+}
+
+
+/* ========================================
+   通信失敗
+======================================== */
+
+function handleCommunicationFailure() {
+
+  elements.garapon.classList.remove(
+    'spinning'
+  );
+
+
+  lotteryState =
+    'error';
+
+
+  elements.drawButton.disabled =
+    true;
+
+
+  elements.drawButton.classList.remove(
+    'is-stop',
+    'is-ready'
+  );
+
+
+  elements.drawButtonText.textContent =
+    '結果を確認できませんでした';
+
+
+  elements.actionGuide.hidden =
+    false;
+
+
+  elements.actionGuide.textContent =
+    'ページを再読み込みしてください';
+
+
+  showStatus(
+    '抽選結果の確認に失敗しました。抽選済みの可能性があるため、繰り返し操作せずページを再読み込みしてください。'
+  );
 }
 
 
@@ -681,7 +750,7 @@ function showResult(
 
 
 /* ========================================
-   ステータス
+   ステータス表示
 ======================================== */
 
 function showStatus(message) {
@@ -856,10 +925,6 @@ function getOrCreateDeviceId() {
 
   } catch (error) {
 
-    /*
-     * localStorageが使えない環境用
-     */
-
     return (
       'DEV_' +
       Date.now().toString(36) +
@@ -926,191 +991,166 @@ function cryptoRandomString(length) {
    JSONP通信
 ======================================== */
 
-let jsonpRequestCounter = 0;
-
 function jsonpRequest(params) {
-  return new Promise(function (resolve, reject) {
 
-    jsonpRequestCounter += 1;
+  return new Promise(
+    function (resolve, reject) {
 
-    const callbackName =
-      'fanFestivalCallback_' + jsonpRequestCounter;
+      /*
+       * 同時に複数リクエストは送らない
+       */
 
-    const script =
-      document.createElement('script');
+      if (activeJsonpRequest) {
 
-    let finished = false;
-    let timeoutId = null;
+        reject(
+          new Error(
+            'JSONP request already running'
+          )
+        );
 
-
-    function cleanup() {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      window.setTimeout(function () {
-        try {
-          delete window[callbackName];
-        } catch (error) {
-          window[callbackName] = undefined;
-        }
-      }, 1000);
-    }
-
-
-    function finishSuccess(data) {
-      if (finished) {
         return;
       }
 
-      finished = true;
 
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-
-      cleanup();
-      resolve(data);
-    }
+      const script =
+        document.createElement(
+          'script'
+        );
 
 
-    function finishError(message) {
-      if (finished) {
-        return;
-      }
-
-      finished = true;
-
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-
-      cleanup();
-
-      reject(
-        new Error(message)
-      );
-    }
+      const requestUrl =
+        GAS_URL +
+        '?action=' +
+        encodeURIComponent(
+          params.action || 'status'
+        ) +
+        '&deviceId=' +
+        encodeURIComponent(
+          params.deviceId || ''
+        ) +
+        '&callback=fanFestivalCallback' +
+        '&cacheBust=' +
+        Date.now();
 
 
-    /*
-     * GASから直接呼ばれるグローバル関数
-     */
-    window[callbackName] = function (data) {
       console.log(
-        'GAS RESPONSE:',
+        'GAS REQUEST:',
         params.action,
-        data
+        requestUrl
       );
 
-      finishSuccess(data);
-    };
+
+      script.type =
+        'text/javascript';
 
 
-    /*
-     * URLを明示的に作成
-     */
-    const requestUrl =
-      GAS_URL +
-      '?action=' +
-      encodeURIComponent(
-        params.action || 'status'
-      ) +
-      '&deviceId=' +
-      encodeURIComponent(
-        params.deviceId || ''
-      ) +
-      '&callback=' +
-      encodeURIComponent(
-        callbackName
-      ) +
-      '&cacheBust=' +
-      Date.now();
+      script.async =
+        true;
 
 
-    console.log(
-      'GAS REQUEST:',
-      params.action,
-      requestUrl
-    );
+      script.src =
+        requestUrl;
 
 
-    script.type =
-      'text/javascript';
+      /*
+       * GASのscript自体を取得できなかった場合
+       */
 
-    script.async =
-      true;
-
-    script.src =
-      requestUrl;
-
-
-    /*
-     * ネットワークエラー
-     */
-    script.onerror =
-      function () {
-
-        console.error(
-          'GAS SCRIPT ERROR:',
-          params.action
-        );
-
-        finishError(
-          'JSONP network error'
-        );
-      };
-
-
-    /*
-     * 読み込み自体が完了した場合
-     */
-    script.onload =
-      function () {
-
-        console.log(
-          'GAS SCRIPT LOADED:',
-          params.action
-        );
-
-        /*
-         * callbackが実行されていれば
-         * finished=trueになっている。
-         *
-         * callback実行前に即エラー扱いにはしない。
-         */
-      };
-
-
-    /*
-     * 30秒でタイムアウト
-     */
-    timeoutId =
-      window.setTimeout(
+      script.onerror =
         function () {
 
-          console.error(
-            'GAS TIMEOUT:',
-            params.action
-          );
+          if (
+            activeJsonpRequest &&
+            activeJsonpRequest.script === script
+          ) {
 
-          finishError(
-            'JSONP timeout'
-          );
+            const request =
+              activeJsonpRequest;
 
-        },
-        30000
+
+            activeJsonpRequest =
+              null;
+
+
+            if (request.timeoutId) {
+
+              window.clearTimeout(
+                request.timeoutId
+              );
+            }
+
+
+            if (script.parentNode) {
+
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+
+            request.reject(
+              new Error(
+                'JSONP network error'
+              )
+            );
+          }
+        };
+
+
+      const timeoutId =
+        window.setTimeout(
+          function () {
+
+            if (
+              !activeJsonpRequest ||
+              activeJsonpRequest.script !== script
+            ) {
+              return;
+            }
+
+
+            const request =
+              activeJsonpRequest;
+
+
+            activeJsonpRequest =
+              null;
+
+
+            if (script.parentNode) {
+
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+
+            request.reject(
+              new Error(
+                'JSONP timeout'
+              )
+            );
+
+          },
+          REQUEST_TIMEOUT_MS
+        );
+
+
+      activeJsonpRequest = {
+        resolve: resolve,
+        reject: reject,
+        script: script,
+        timeoutId: timeoutId
+      };
+
+
+      document.head.appendChild(
+        script
       );
-
-
-    /*
-     * DOMへ追加して実行
-     */
-    document.head.appendChild(
-      script
-    );
-  });
+    }
+  );
 }
+
 
 /* ========================================
    Loading
